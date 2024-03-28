@@ -52,17 +52,14 @@ class Jobs_Widget extends WP_Widget {
             array( 'description' => 'Display jobs on the frontend' )
         );
     }
-
     // Widget output
     public function widget( $args, $instance ) {
         echo $args['before_widget'];
         echo $args['before_title'] . 'Latest Jobs' . $args['after_title'];
-
         // Query jobs
         $jobs_query = new WP_Query( array(
             'post_type'      => 'jobs',
         ) );
-
         // Display jobs
         if ( $jobs_query->have_posts() ) {
             echo '<ul>';
