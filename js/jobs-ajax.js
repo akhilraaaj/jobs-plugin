@@ -2,7 +2,7 @@ jQuery(document).ready(function($) {
     // Hide the preview container initially
     $('#application-preview').hide();
 
-    // Submit job application via AJAX
+    // Submit application
     $('.job-application-form').submit(function(e) {
         e.preventDefault();
 
@@ -37,7 +37,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Delete job application via AJAX
+    // Delete application 
     $(document).on('click', '.application_del_btn', function() {
         var job_id = $(this).data('job-id');
         var application_index = $(this).data('application-index');
