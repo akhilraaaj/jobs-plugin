@@ -135,13 +135,13 @@ function submit_job_application() {
     $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
     $jobId = isset($_POST['job_id']) ? absint($_POST['job_id']) : 0;
 
-    // Validate form data
+    // Validate form
     if (empty($name) || empty($email) || empty($message) || empty($jobId)) {
         echo json_encode(array('status' => 'error', 'message' => 'Invalid data'));
         wp_die();
     }
 
-    // get all  applications
+    // get all applications
     $job_applications = get_post_meta($jobId, 'job_applications', true);
     if (!is_array($job_applications)) {
         $job_applications = array();
@@ -234,7 +234,7 @@ function delete_job_application() {
         wp_die();
     }
 
-    // Get all  applications
+    // Get all applications
     $job_applications = get_post_meta($jobId, 'job_applications', true);
 
     // Check if the application exists or not
