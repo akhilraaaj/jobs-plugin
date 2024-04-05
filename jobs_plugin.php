@@ -6,6 +6,8 @@ Version: 1.0
 Author: Akhil
 */
 
+require_once plugin_dir_path(__FILE__) . 'applicants_child_post_type.php';
+
 // Register custom post type for jobs
 function custom_jobs_post_type() {
     $labels = array(
@@ -33,8 +35,8 @@ function custom_jobs_post_type() {
         'query_var'          => true,
         'rewrite'            => array( 'slug' => 'jobs' ),
         'capability_type'    => 'post',
-        'has_archive'        => false,
-        'hierarchical'       => false,
+        'has_archive'        => true,
+        'hierarchical'       => true,
         'menu_position'      => null,
         'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'custom-fields' ),
         'menu_icon'          => 'dashicons-portfolio'
@@ -102,7 +104,7 @@ function job_application_form($content) {
                 <textarea name="message" required id="message_' . $job_id . '" cols="30" rows="5"></textarea><br>
                 <input type="hidden" name="job_id" value="' . $job_id . '">
                 <input type="hidden" name="action" value="submit_job_application">
-                <input type="submit" value="Submit Application">
+                <input type="submit" value="Submit Application" class="submit-button">
             </form>
             <div id="application-preview"> </div>
         </div>
@@ -129,128 +131,90 @@ function script_enqueuer() {
 }
 add_action('init', 'script_enqueuer');
 
+// Function to save applicant data into the 'applicants' table
+function save_applicant_data_to_database($applicant_name, $applicant_email, $job_id, $message, $status) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'applicants';
+    $result = $wpdb->insert(
+        $table_name,
+        array(
+            'applicant_name' => $applicant_name,
+            'applicant_email' => $applicant_email,
+            'job_id' => $job_id,
+            'message' => $message,
+            'status' => $status
+        ),
+        array('%s', '%s', '%d', '%s', '%s')
+    );
+
+    // Check for errors
+    if ($result === false) {
+        $wpdb_error = $wpdb->last_error;
+        error_log("Error inserting data into applicants table: $wpdb_error");
+        return false;
+    }
+
+    return true;
+}
+
+// Modify the submit_job_application function to also save data to the 'applicants' table
 function submit_job_application() {
     $name = isset($_POST['applicant_name']) ? sanitize_text_field($_POST['applicant_name']) : '';
     $email = isset($_POST['applicant_email']) ? sanitize_email($_POST['applicant_email']) : '';
     $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
     $jobId = isset($_POST['job_id']) ? absint($_POST['job_id']) : 0;
 
-    // Validate form
+    // Validate form data
     if (empty($name) || empty($email) || empty($message) || empty($jobId)) {
         echo json_encode(array('status' => 'error', 'message' => 'Invalid data'));
         wp_die();
     }
 
-    // get all applications
-    $job_applications = get_post_meta($jobId, 'job_applications', true);
-    if (!is_array($job_applications)) {
-        $job_applications = array();
+    // Save applicant data to 'applicants' table
+    $saved_to_database = save_applicant_data_to_database($name, $email, $jobId, $message, 'pending');
+
+    if ($saved_to_database) {
+        // Create new applicant post
+        $applicant_post = array(
+            'post_title' => $name, // Set applicant name as post title
+            'post_type' => 'applicants', // Set post type to applicants
+            'post_status' => 'publish', // Set post status to publish
+        );
+
+        // Insert the post into the database
+        $applicant_post_id = wp_insert_post($applicant_post);
+
+        // Update applicant post meta with submitted data
+        if (!is_wp_error($applicant_post_id)) {
+            update_post_meta($applicant_post_id, 'applicant_email', $email);
+            update_post_meta($applicant_post_id, 'job_id', $jobId);
+            update_post_meta($applicant_post_id, 'message', $message);
+            update_post_meta($applicant_post_id, 'status', 'pending');
+
+            // Return success response
+            echo json_encode(
+                array(
+                    "status" => "success",
+                    "applicant_Name" => $name,
+                    "applicant_Email" => $email,
+                    "message" => $message,
+                    "applicant_post_id" => $applicant_post_id,
+                    "job_id" => $jobId 
+                )
+            );
+        } else {
+            // Return error response if post creation fails
+            echo json_encode(array('status' => 'error', 'message' => 'Failed to submit application'));
+        }
+    } else {
+        // Return error response if saving to database fails
+        echo json_encode(array('status' => 'error', 'message' => 'Failed to save applicant data to database'));
     }
 
-    // Create a new application array
-    $new_job_application = array(
-        "applicant_Name" => $name,
-        "applicant_Email" => $email,
-        "message" => $message,
-        "ID" => $jobId
-    );
-
-    $job_applications[] = $new_job_application;
-    update_post_meta($jobId, "job_applications", $job_applications);
-
-    echo json_encode(
-        array(
-            "status" => "success",
-            "message" => $message,
-            "applicant_Name" => $name,
-            "applicant_Email" => $email
-        )
-    );
     wp_die();
 }
+
+
 add_action('wp_ajax_submit_job_application', 'submit_job_application');
 add_action('wp_ajax_nopriv_submit_job_application', 'submit_job_application');
-
-function add_job_application_meta_box() {
-    add_meta_box(
-        'job_application_meta_box',
-        'Job Applications',
-        'display_job_application_meta_box',
-        'jobs',
-        'normal',
-        'high'
-    );
-}
-add_action('add_meta_boxes', 'add_job_application_meta_box');
-
-function display_job_application_meta_box($post) {
-    // get job applications
-    $job_applications = get_post_meta($post->ID, 'job_applications', true);
-    ?>
-    <div class="job-applications-container">
-        <?php if (!empty($job_applications)): ?>
-            <ul>
-                <?php foreach ($job_applications as $index => $application): ?>
-                    <li>
-                        <?php if (is_array($application) && isset($application['applicant_Name']) && isset($application['applicant_Email'])): ?>
-                            <strong>Name:</strong>
-                            <?php echo esc_html($application['applicant_Name']); ?><br>
-                            <strong>Email:</strong>
-                            <?php echo esc_html($application['applicant_Email']); ?><br>
-                            <?php if (isset($application['message'])): ?>
-                                <strong>Message:</strong>
-                                <?php echo esc_html($application['message']); ?><br>
-                            <?php endif; ?>
-                            <input type="button" class="application_del_btn" data-job-id="<?php echo esc_html($post->ID); ?>"
-                                data-application-index="<?php echo esc_html($index); ?>"
-                                data-applicant-name="<?php echo esc_html($application['applicant_Name']); ?>"
-                                data-applicant-email="<?php echo esc_html($application['applicant_Email']); ?>" value="Delete">
-                        <?php else: ?>
-                            <p>Error: Invalid application data. Index: <?php echo esc_html($index); ?></p>
-                            <?php 
-                                error_log('Invalid application data at  ' . $index . ': ' . print_r($application, true));
-                            ?>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php else: ?>
-            <p>No applications submitted for this job yet.</p>
-        <?php endif; ?>
-    </div>
-    <?php
-}
-
-function delete_job_application() {
-    // get form data
-    $name = isset($_POST['applicant_Name']) ? sanitize_text_field($_POST['applicant_Name']) : '';
-    $email = isset($_POST['applicant_Email']) ? sanitize_email($_POST['applicant_Email']) : '';
-    $jobId = isset($_POST['job_id']) ? absint($_POST['job_id']) : 0;
-    $application_index = isset($_POST['application_index']) ? absint($_POST['application_index']) : 0;
-
-    // Validation
-    if (empty($name) || empty($email) || empty($jobId) || $application_index < 0) {
-        echo json_encode(array('status' => 'error', 'message' => 'Invalid data'));
-        wp_die();
-    }
-
-    // Get all applications
-    $job_applications = get_post_meta($jobId, 'job_applications', true);
-
-    // Check if the application exists or not
-    if (isset($job_applications[$application_index])) {
-        if ($job_applications[$application_index]['applicant_Name'] === $name && $job_applications[$application_index]['applicant_Email'] === $email) {
-            unset($job_applications[$application_index]);
-            update_post_meta($jobId, 'job_applications', $job_applications);
-            echo json_encode(array('status' => 'success', 'message' => 'Application deleted successfully'));
-            wp_die();
-        }
-    }
-
-    // If application deletion fails, return error response
-    echo json_encode(array('status' => 'error', 'message' => 'Failed to delete application'));
-    wp_die();
-}
-add_action('wp_ajax_delete_job_application', 'delete_job_application');
-add_action('wp_ajax_nopriv_delete_job_application', 'delete_job_application');
 
