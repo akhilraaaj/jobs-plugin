@@ -1,9 +1,7 @@
 <?php
-
 // Register applicants type for jobs
 function applicants_child_post_type() {
     global $wpdb;
-
     // Create applicants table if not exists
     $table_name = $wpdb->prefix . 'applicants';
     if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
@@ -21,7 +19,6 @@ function applicants_child_post_type() {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
     }
-
     // Register post type for applicants
     $labels = array(
         'name'               => 'Applicants',
@@ -53,14 +50,10 @@ function applicants_child_post_type() {
         'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'custom-fields' ),
     );
     register_post_type( 'applicants', $args );
-
     // Add meta box to display job name
     add_action('add_meta_boxes', 'add_applicant_job_meta_box');
 }
-
 add_action( 'init', 'applicants_child_post_type' );
-
-
 
 // Function to add meta box for job name
 function add_applicant_job_meta_box() {
@@ -72,7 +65,6 @@ function add_applicant_job_meta_box() {
         'normal',
         'high'
     );
-
     add_meta_box(
         'applicant_status_meta_box',
         'Application Status',
@@ -119,8 +111,7 @@ function save_applicant_status_meta_box($post_id) {
 }
 add_action('save_post', 'save_applicant_status_meta_box');
 
-
-// Add custom column to display job name in All Applicants section
+// Add custom columns
 function add_applicant_custom_columns($columns) {
     $columns['title'] = 'Name';
     $columns['date'] = 'Date Applied';
@@ -131,7 +122,7 @@ function add_applicant_custom_columns($columns) {
 }
 add_filter('manage_applicants_posts_columns', 'add_applicant_custom_columns');
 
-// Populate custom column with job name data
+// Populate custom columns data
 function populate_applicant_custom_columns($column, $post_id) {
     if ($column == 'job_name') {
         $job_id = get_post_meta($post_id, 'job_id', true);
