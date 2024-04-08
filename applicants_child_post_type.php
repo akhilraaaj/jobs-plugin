@@ -1,7 +1,6 @@
 <?php
 
 // Register applicants type for jobs
-// Register applicants type for jobs
 function applicants_child_post_type() {
     global $wpdb;
 
