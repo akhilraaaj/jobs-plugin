@@ -160,14 +160,12 @@ function save_applicant_data_to_database($applicant_name, $applicant_email, $job
         ),
         array('%s', '%s', '%d', '%s', '%s')
     );
-
     // Check for errors
     if ($result === false) {
         $wpdb_error = $wpdb->last_error;
         error_log("Error inserting data into applicants table: $wpdb_error");
         return false;
     }
-
     return true;
 }
 
@@ -185,7 +183,6 @@ function submit_job_application() {
 
     // Save applicant data to 'applicants' table
     $saved_to_database = save_applicant_data_to_database($name, $email, $jobId, $message, 'pending');
-
     if ($saved_to_database) {
         // Create new applicant post
         $applicant_post = array(
@@ -215,21 +212,16 @@ function submit_job_application() {
                     "job_id" => $jobId 
                 )
             );
-            
         } else {
             // Error if post creation fails
             echo json_encode(array('status' => 'error', 'message' => 'Failed to submit application'));
         }
     } else {
-        // Errorif saving to database fails
+        // Error if saving to database fails
         echo json_encode(array('status' => 'error', 'message' => 'Failed to save applicant data to database'));
     }
-
     wp_die();
 }
-
-
 add_action('wp_ajax_submit_job_application', 'submit_job_application');
 add_action('wp_ajax_nopriv_submit_job_application', 'submit_job_application');
-
 ?>
