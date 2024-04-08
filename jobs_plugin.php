@@ -6,6 +6,20 @@ Version: 1.0
 Author: Akhil
 */
 
+// Plugin Activation Hook
+register_activation_hook( __FILE__, 'jobs_plugin_activate' );
+
+function jobs_plugin_activate() {
+    applicants_child_post_type();
+}
+
+// Plugin Deactivation Hook
+register_deactivation_hook( __FILE__, 'jobs_plugin_deactivate' );
+
+function jobs_plugin_deactivate() {
+    // By default, the data doesn't get deleted on deactivation
+}
+
 require_once plugin_dir_path(__FILE__) . 'applicants_child_post_type.php';
 
 // Register custom post type for jobs
@@ -157,7 +171,6 @@ function save_applicant_data_to_database($applicant_name, $applicant_email, $job
     return true;
 }
 
-// Modify the submit_job_application function to also save data to the 'applicants' table
 function submit_job_application() {
     $name = isset($_POST['applicant_name']) ? sanitize_text_field($_POST['applicant_name']) : '';
     $email = isset($_POST['applicant_email']) ? sanitize_email($_POST['applicant_email']) : '';
@@ -176,9 +189,9 @@ function submit_job_application() {
     if ($saved_to_database) {
         // Create new applicant post
         $applicant_post = array(
-            'post_title' => $name, // Set applicant name as post title
-            'post_type' => 'applicants', // Set post type to applicants
-            'post_status' => 'publish', // Set post status to publish
+            'post_title' => $name, 
+            'post_type' => 'applicants',
+            'post_status' => 'publish', 
         );
 
         // Insert the post into the database
@@ -195,19 +208,20 @@ function submit_job_application() {
             echo json_encode(
                 array(
                     "status" => "success",
-                    "applicant_Name" => $name,
-                    "applicant_Email" => $email,
+                    "applicant_name" => $name, 
+                    "applicant_email" => $email, 
                     "message" => $message,
                     "applicant_post_id" => $applicant_post_id,
                     "job_id" => $jobId 
                 )
             );
+            
         } else {
-            // Return error response if post creation fails
+            // Error if post creation fails
             echo json_encode(array('status' => 'error', 'message' => 'Failed to submit application'));
         }
     } else {
-        // Return error response if saving to database fails
+        // Errorif saving to database fails
         echo json_encode(array('status' => 'error', 'message' => 'Failed to save applicant data to database'));
     }
 
@@ -218,3 +232,4 @@ function submit_job_application() {
 add_action('wp_ajax_submit_job_application', 'submit_job_application');
 add_action('wp_ajax_nopriv_submit_job_application', 'submit_job_application');
 
+?>
