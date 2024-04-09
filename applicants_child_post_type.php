@@ -2,7 +2,7 @@
 // Register applicants type for jobs
 function applicants_child_post_type() {
     global $wpdb;
-    // Create applicants table if not exists
+    // Create applicants table
     $table_name = $wpdb->prefix . 'applicants';
     if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
         $charset_collate = $wpdb->get_charset_collate();
@@ -50,12 +50,12 @@ function applicants_child_post_type() {
         'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'custom-fields' ),
     );
     register_post_type( 'applicants', $args );
-    // Add meta box to display job name
+    // Add meta box to display job name and status
     add_action('add_meta_boxes', 'add_applicant_job_meta_box');
 }
 add_action( 'init', 'applicants_child_post_type' );
 
-// Function to add meta box for job name
+// Function to add meta box for job name and status
 function add_applicant_job_meta_box() {
     add_meta_box(
         'applicant_job_meta_box',
@@ -123,7 +123,7 @@ function add_applicant_custom_columns($columns) {
 }
 add_filter('manage_applicants_posts_columns', 'add_applicant_custom_columns');
 
-// Populate custom column with job name data
+// Populate custom column with its data
 function populate_applicant_custom_columns($column, $post_id) {
     if ($column == 'job_name') {
         $job_id = get_post_meta($post_id, 'job_id', true);
@@ -151,6 +151,7 @@ function populate_applicant_custom_columns($column, $post_id) {
 }
 add_action('manage_applicants_posts_custom_column', 'populate_applicant_custom_columns', 10, 2);
 
+// Delete functionality
 function delete_applicant_data_on_trash($post_id) {
     $post_type = get_post_type($post_id);
     if ($post_type === 'applicants') {
@@ -164,6 +165,7 @@ function delete_applicant_data_on_trash($post_id) {
 }
 add_action('wp_trash_post', 'delete_applicant_data_on_trash');
 
+// Update functionality
 function update_applicant_status_in_custom_table($post_id) {
     $post_type = get_post_type($post_id);
     if ($post_type === 'applicants') {
