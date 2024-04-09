@@ -151,6 +151,19 @@ add_action('init', 'script_enqueuer');
 function save_applicant_data_to_database($applicant_name, $applicant_email, $job_id, $message, $status) {
     global $wpdb;
     $table_name = $wpdb->prefix . 'applicants';
+
+     // Check if the same applicant has already applied for the job
+     $existing_applicant = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT * FROM $table_name WHERE applicant_email = %s AND job_id = %d",
+            $applicant_email,
+            $job_id
+        )
+    );
+    // If the applicant already exists for the job, do not insert duplicate entry
+    if ($existing_applicant) {
+        return false;
+    }
     $result = $wpdb->insert(
         $table_name,
         array(
@@ -178,6 +191,16 @@ function submit_job_application() {
     $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
     $jobId = isset($_POST['job_id']) ? absint($_POST['job_id']) : 0;
     $status = 'pending';
+
+     // Check if the applicant has already applied for this job
+     $already_applied = check_if_already_applied($name, $email, $jobId);
+
+     if ($already_applied) {
+         // If applicant has already applied, return response with already_applied flag
+         echo json_encode(array('status' => 'success', 'already_applied' => true));
+         wp_die();
+     }
+
     // Validate form data
     if (empty($name) || empty($email) || empty($message) || empty($jobId)) {
         echo json_encode(array('status' => 'error', 'message' => 'Invalid data'));
@@ -221,6 +244,20 @@ function submit_job_application() {
     }
     wp_die();
 }
+
+function check_if_already_applied($name, $email, $jobId) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'applicants';
+    $existing_application = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE applicant_name = %s AND applicant_email = %s AND job_id = %d",
+        $name,
+        $email,
+        $jobId
+    ));
+    
+    return $existing_application ? true : false;
+}
+
 add_action('wp_ajax_submit_job_application', 'submit_job_application');
 add_action('wp_ajax_nopriv_submit_job_application', 'submit_job_application');
 ?>
