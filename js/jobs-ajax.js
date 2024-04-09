@@ -18,8 +18,8 @@ jQuery(document).ready(function($) {
                     $('#application-preview').show();
                     // Show preview of submitted data
                     var preview = '<h3>Preview of Your Application:</h3>';
-                    preview += '<p><strong>Name:</strong> ' + response.applicant_name + '</p>'; // Use 'applicant_name' instead of 'applicant_Name'
-                    preview += '<p><strong>Email:</strong> ' + response.applicant_email + '</p>'; // Use 'applicant_email' instead of 'applicant_Email'
+                    preview += '<p><strong>Name:</strong> ' + response.applicant_name + '</p>'; 
+                    preview += '<p><strong>Email:</strong> ' + response.applicant_email + '</p>'; 
                     preview += '<p><strong>Message:</strong> ' + response.message + '</p>';
                     preview += '<p class="success" style="color: #28a745;"><strong>Application Submitted Successfully!</strong></p>';
                     $('#application-preview').html(preview);
