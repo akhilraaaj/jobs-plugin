@@ -155,11 +155,11 @@ add_action('manage_applicants_posts_custom_column', 'populate_applicant_custom_c
 function delete_applicant_data_on_trash($post_id) {
     $post_type = get_post_type($post_id);
     if ($post_type === 'applicants') {
-        $applicant_email = get_post_meta($post_id, 'applicant_email', true);
-        if (!empty($applicant_email)) {
+        $job_id = get_post_meta($post_id, 'job_id', true); 
+        if (!empty($job_id)) {
             global $wpdb;
             $table_name = $wpdb->prefix . 'applicants';
-            $wpdb->delete($table_name, array('applicant_email' => $applicant_email), array('%s'));
+            $wpdb->delete($table_name, array('job_id' => $job_id), array('%d')); 
         }
     }
 }
@@ -169,17 +169,17 @@ add_action('wp_trash_post', 'delete_applicant_data_on_trash');
 function update_applicant_status_in_custom_table($post_id) {
     $post_type = get_post_type($post_id);
     if ($post_type === 'applicants') {
+        $job_id = get_post_meta($post_id, 'job_id', true); 
         $status = get_post_meta($post_id, 'status', true);
-        $applicant_email = get_post_meta($post_id, 'applicant_email', true); 
-        if (!empty($status) && !empty($applicant_email)) {
+        if (!empty($status) && !empty($job_id)) {
             global $wpdb;
             $table_name = $wpdb->prefix . 'applicants';
             $wpdb->update(
                 $table_name,
                 array('status' => $status),
-                array('applicant_email' => $applicant_email), 
+                array('job_id' => $job_id), 
                 array('%s'), 
-                array('%s')
+                array('%d')
             );
         }
     }
