@@ -98,11 +98,13 @@ class Jobs_Widget extends WP_Widget {
     }
 }
 
+// Register widget
 function register_jobs_widget() {
     register_widget( 'Jobs_Widget' );
 }
 add_action( 'widgets_init', 'register_jobs_widget' );
 
+// Job Application frontend form
 function job_application_form($content) {
     global $post;
     if ($post->post_type === 'jobs') {
@@ -169,6 +171,7 @@ function save_applicant_data_to_database($applicant_name, $applicant_email, $job
     return true;
 }
 
+// Function to submit data
 function submit_job_application() {
     $name = isset($_POST['applicant_name']) ? sanitize_text_field($_POST['applicant_name']) : '';
     $email = isset($_POST['applicant_email']) ? sanitize_email($_POST['applicant_email']) : '';
