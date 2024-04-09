@@ -196,7 +196,7 @@ function submit_job_application() {
      $already_applied = check_if_already_applied($name, $email, $jobId);
 
      if ($already_applied) {
-         // If applicant has already applied, return response with already_applied flag
+         // If applicant has already applied, return response with already_applied content
          echo json_encode(array('status' => 'success', 'already_applied' => true));
          wp_die();
      }
@@ -245,6 +245,7 @@ function submit_job_application() {
     wp_die();
 }
 
+// Already applied feature
 function check_if_already_applied($name, $email, $jobId) {
     global $wpdb;
     $table_name = $wpdb->prefix . 'applicants';
@@ -254,7 +255,6 @@ function check_if_already_applied($name, $email, $jobId) {
         $email,
         $jobId
     ));
-    
     return $existing_application ? true : false;
 }
 
