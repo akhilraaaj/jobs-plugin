@@ -65,6 +65,7 @@ function add_applicant_job_meta_box() {
         'normal',
         'high'
     );
+
     add_meta_box(
         'applicant_status_meta_box',
         'Application Status',
@@ -111,7 +112,7 @@ function save_applicant_status_meta_box($post_id) {
 }
 add_action('save_post', 'save_applicant_status_meta_box');
 
-// Add custom columns
+// Add custom column to display job name in All Applicants section
 function add_applicant_custom_columns($columns) {
     $columns['title'] = 'Name';
     $columns['date'] = 'Date Applied';
@@ -122,7 +123,7 @@ function add_applicant_custom_columns($columns) {
 }
 add_filter('manage_applicants_posts_columns', 'add_applicant_custom_columns');
 
-// Populate custom columns data
+// Populate custom column with job name data
 function populate_applicant_custom_columns($column, $post_id) {
     if ($column == 'job_name') {
         $job_id = get_post_meta($post_id, 'job_id', true);
@@ -150,5 +151,37 @@ function populate_applicant_custom_columns($column, $post_id) {
 }
 add_action('manage_applicants_posts_custom_column', 'populate_applicant_custom_columns', 10, 2);
 
+function delete_applicant_data_on_trash($post_id) {
+    $post_type = get_post_type($post_id);
+    if ($post_type === 'applicants') {
+        $applicant_email = get_post_meta($post_id, 'applicant_email', true);
+        if (!empty($applicant_email)) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'applicants';
+            $wpdb->delete($table_name, array('applicant_email' => $applicant_email), array('%s'));
+        }
+    }
+}
+add_action('wp_trash_post', 'delete_applicant_data_on_trash');
 
+function update_applicant_status_in_custom_table($post_id) {
+    $post_type = get_post_type($post_id);
+    if ($post_type === 'applicants') {
+        $status = get_post_meta($post_id, 'status', true);
+        $applicant_email = get_post_meta($post_id, 'applicant_email', true); 
+        if (!empty($status) && !empty($applicant_email)) {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'applicants';
+            $wpdb->update(
+                $table_name,
+                array('status' => $status),
+                array('applicant_email' => $applicant_email), 
+                array('%s'), 
+                array('%s')
+            );
+        }
+    }
+}
+add_action('save_post', 'update_applicant_status_in_custom_table');
+?>
 
