@@ -65,7 +65,6 @@ function add_applicant_job_meta_box() {
         'normal',
         'high'
     );
-
     add_meta_box(
         'applicant_status_meta_box',
         'Application Status',
