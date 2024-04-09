@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Jobs Plugin
-Description: A plugin to add jobs and display on frontend as page and widget.
+Description: A job manager plugin that simplifies job and application management with CRUD operations.
 Version: 1.0
 Author: Akhil
 */
@@ -49,7 +49,7 @@ function custom_jobs_post_type() {
         'query_var'          => true,
         'rewrite'            => array( 'slug' => 'jobs' ),
         'capability_type'    => 'post',
-        'has_archive'        => true,
+        'has_archive'        => false,
         'hierarchical'       => true,
         'menu_position'      => null,
         'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'custom-fields' ),
@@ -65,7 +65,7 @@ class Jobs_Widget extends WP_Widget {
         parent::__construct(
             'jobs_widget',
             'Jobs Widget',
-            array( 'description' => 'Display jobs on the frontend' )
+            array( 'description' => 'Disp   lay jobs on the frontend' )
         );
     }
 
@@ -111,11 +111,11 @@ function job_application_form($content) {
         <div class="job_application_form">
             <form id="job_application_forms' . $job_id . '" class="job-application-form" data-job-id="' . $job_id . '">
                 <label for="applicant_names' . $job_id . '">Name:</label>
-                <input type="text" required name="applicant_name" id="applicant_names' . $job_id . '" value=""><br>
+                <input type="text" required name="applicant_name" id="applicant_names' . $job_id . '" value="">
                 <label for="applicant_emails' . $job_id . '">Email:</label>
-                <input type="email" required name="applicant_email" id="applicant_emails' . $job_id . '" value=""><br>
-                <label for="messages' . $job_id . '">Message:</label><br>
-                <textarea name="message" required id="message_' . $job_id . '" cols="30" rows="5"></textarea><br>
+                <input type="email" required name="applicant_email" id="applicant_emails' . $job_id . '" value="">
+                <label for="messages' . $job_id . '">Message:</label>
+                <textarea name="message" required id="message_' . $job_id . '" cols="30" rows="5"></textarea>
                 <input type="hidden" name="job_id" value="' . $job_id . '">
                 <input type="hidden" name="action" value="submit_job_application">
                 <input type="submit" value="Submit Application" class="submit-button">
@@ -156,7 +156,7 @@ function save_applicant_data_to_database($applicant_name, $applicant_email, $job
             'applicant_email' => $applicant_email,
             'job_id' => $job_id,
             'message' => $message,
-            'status' => $status
+            'status' => $status 
         ),
         array('%s', '%s', '%d', '%s', '%s')
     );
@@ -174,15 +174,14 @@ function submit_job_application() {
     $email = isset($_POST['applicant_email']) ? sanitize_email($_POST['applicant_email']) : '';
     $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
     $jobId = isset($_POST['job_id']) ? absint($_POST['job_id']) : 0;
-
+    $status = 'pending';
     // Validate form data
     if (empty($name) || empty($email) || empty($message) || empty($jobId)) {
         echo json_encode(array('status' => 'error', 'message' => 'Invalid data'));
         wp_die();
     }
-
     // Save applicant data to 'applicants' table
-    $saved_to_database = save_applicant_data_to_database($name, $email, $jobId, $message, 'pending');
+    $saved_to_database = save_applicant_data_to_database($name, $email, $jobId, $message, $status);
     if ($saved_to_database) {
         // Create new applicant post
         $applicant_post = array(
@@ -190,17 +189,14 @@ function submit_job_application() {
             'post_type' => 'applicants',
             'post_status' => 'publish', 
         );
-
         // Insert the post into the database
         $applicant_post_id = wp_insert_post($applicant_post);
-
         // Update applicant post meta with submitted data
         if (!is_wp_error($applicant_post_id)) {
             update_post_meta($applicant_post_id, 'applicant_email', $email);
             update_post_meta($applicant_post_id, 'job_id', $jobId);
             update_post_meta($applicant_post_id, 'message', $message);
             update_post_meta($applicant_post_id, 'status', 'pending');
-
             // Return success response
             echo json_encode(
                 array(
